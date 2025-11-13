@@ -1,7 +1,8 @@
 const fileInput = document.getElementById("file");
 const dropZone = document.getElementById("drop-zone");
 const resultContainer = document.getElementById("result");
-const copyButton = document.getElementById("copy");
+const copyFullButton = document.getElementById("copy-full");
+const copyPrefixButton = document.getElementById("copy-prefix");
 const template = document.getElementById("result-template");
 
 const placeholder = `<p class="placeholder">No file selected yet</p>`;
@@ -23,14 +24,22 @@ function renderResult(fileName, hash) {
   const remainder = hash.slice(7);
   codeEl.innerHTML = `<span class="hash-head">${firstSegment}</span>${remainder}`;
   resultContainer.appendChild(clone);
-  copyButton.disabled = false;
-  copyButton.dataset.hash = hash;
+  copyFullButton.disabled = false;
+  copyFullButton.dataset.hash = hash;
+  copyFullButton.textContent = "Copy hash";
+  copyPrefixButton.disabled = false;
+  copyPrefixButton.dataset.prefix = firstSegment;
+  copyPrefixButton.textContent = "Copy first 7";
 }
 
 function renderPlaceholder(message) {
   resultContainer.innerHTML = `<p class="placeholder">${message}</p>`;
-  copyButton.disabled = true;
-  delete copyButton.dataset.hash;
+  [copyFullButton, copyPrefixButton].forEach((button) => {
+    button.disabled = true;
+    delete button.dataset.hash;
+    delete button.dataset.prefix;
+    button.textContent = button.id === "copy-full" ? "Copy hash" : "Copy first 7";
+  });
 }
 
 async function handleFiles(files) {
@@ -75,20 +84,37 @@ dropZone.addEventListener("drop", (event) => {
   }
 });
 
-copyButton.addEventListener("click", async () => {
-  const hash = copyButton.dataset.hash;
+copyFullButton.addEventListener("click", async () => {
+  const hash = copyFullButton.dataset.hash;
   if (!hash) {
     return;
   }
 
   try {
     await navigator.clipboard.writeText(hash);
-    copyButton.textContent = "Copied!";
-    setTimeout(() => (copyButton.textContent = "Copy hash"), 1200);
+    copyFullButton.textContent = "Copied!";
+    setTimeout(() => (copyFullButton.textContent = "Copy hash"), 1200);
   } catch (error) {
     console.error("Clipboard error", error);
-    copyButton.textContent = "Copy failed";
-    setTimeout(() => (copyButton.textContent = "Copy hash"), 1200);
+    copyFullButton.textContent = "Copy failed";
+    setTimeout(() => (copyFullButton.textContent = "Copy hash"), 1200);
+  }
+});
+
+copyPrefixButton.addEventListener("click", async () => {
+  const prefix = copyPrefixButton.dataset.prefix;
+  if (!prefix) {
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(prefix);
+    copyPrefixButton.textContent = "Copied!";
+    setTimeout(() => (copyPrefixButton.textContent = "Copy first 7"), 1200);
+  } catch (error) {
+    console.error("Clipboard error", error);
+    copyPrefixButton.textContent = "Copy failed";
+    setTimeout(() => (copyPrefixButton.textContent = "Copy first 7"), 1200);
   }
 });
 
