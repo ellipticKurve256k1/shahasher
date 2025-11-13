@@ -1,5 +1,5 @@
-const CACHE_NAME = "shahasher-cache-v1";
-const ASSETS = [
+const CACHE_NAME = "shahasher-cache-v2";
+const CORE_ASSETS = [
   "./",
   "index.html",
   "styles.css",
@@ -12,51 +12,79 @@ const ASSETS = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS))
   );
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((keys) =>
-        Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys
+          .filter((key) => key !== CACHE_NAME)
+          .map((staleKey) => caches.delete(staleKey))
       )
+    )
   );
   self.clients.claim();
 });
+
+const offlineFallback = () => caches.match("index.html");
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") {
     return;
   }
 
-  if (event.request.mode === "navigate") {
-    event.respondWith(
-      fetch(event.request).catch(() => caches.match("index.html"))
-    );
-    return;
-  }
-
   event.respondWith(
-    caches.match(event.request).then((cached) => {
+    (async () => {
+      if (event.request.mode === "navigate") {
+        try {
+          const networkResponse = await fetch(event.request);
+          return networkResponse;
+        } catch {
+          const cachedPage =
+            (await caches.match(event.request, { ignoreSearch: true })) ||
+            (await offlineFallback());
+          return (
+            cachedPage ||
+            new Response("Offline content unavailable", {
+              status: 503,
+              statusText: "Offline"
+            })
+          );
+        }
+      }
+
+      const cached = await caches.match(event.request);
       if (cached) {
         return cached;
       }
 
-      return fetch(event.request)
-        .then((response) => {
-          if (!response || response.status !== 200 || response.type !== "basic") {
-            return response;
+      try {
+        const networkResponse = await fetch(event.request);
+        if (
+          networkResponse &&
+          networkResponse.status === 200 &&
+          networkResponse.type === "basic"
+        ) {
+          const cache = await caches.open(CACHE_NAME);
+          cache.put(event.request, networkResponse.clone());
+        }
+        return networkResponse;
+      } catch {
+        if (event.request.destination === "document") {
+          const fallback = await offlineFallback();
+          if (fallback) {
+            return fallback;
           }
-
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-          return response;
-        })
-        .catch(() => caches.match("index.html"));
-    })
+        }
+        return new Response("Offline content unavailable", {
+          status: 503,
+          statusText: "Offline"
+        });
+      }
+    })()
   );
 });
