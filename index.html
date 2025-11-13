@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0f172a" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
+  <title>SHAHasher</title>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="hero">
+      <p class="badge">PWA</p>
+      <h1>SHAHasher</h1>
+      <p>Compute SHA-256 hashes securely in your browser. No uploads, no trackers—everything stays local.</p>
+    </header>
+
+    <section class="card">
+      <label for="file" class="file-drop" id="drop-zone">
+        <input id="file" type="file" class="sr-only" />
+        <div class="icon-stack" aria-hidden="true">
+          <span class="icon icon-layer"></span>
+          <span class="icon icon-top"></span>
+        </div>
+        <div>
+          <strong>Choose a file</strong>
+          <p>or drag & drop anywhere inside the box</p>
+        </div>
+      </label>
+
+      <div class="result" id="result" aria-live="polite">
+        <p class="placeholder">No file selected yet</p>
+      </div>
+      <button class="copy" id="copy" type="button" disabled>Copy hash</button>
+    </section>
+  </main>
+
+  <template id="result-template">
+    <div class="result-block">
+      <p class="file-name"></p>
+      <p class="hash-label">SHA-256</p>
+      <code class="hash-value"></code>
+    </div>
+  </template>
+
+  <script defer src="app.js"></script>
+</body>
+</html>
