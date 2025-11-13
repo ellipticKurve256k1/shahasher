@@ -18,7 +18,10 @@ function renderResult(fileName, hash) {
   resultContainer.innerHTML = "";
   const clone = template.content.cloneNode(true);
   clone.querySelector(".file-name").textContent = fileName;
-  clone.querySelector(".hash-value").textContent = hash;
+  const codeEl = clone.querySelector(".hash-value");
+  const firstSegment = hash.slice(0, 7);
+  const remainder = hash.slice(7);
+  codeEl.innerHTML = `<span class="hash-head">${firstSegment}</span>${remainder}`;
   resultContainer.appendChild(clone);
   copyButton.disabled = false;
   copyButton.dataset.hash = hash;

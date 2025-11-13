@@ -46,6 +46,10 @@ body {
   margin: 0.25rem 0;
 }
 
+.title-accent {
+  color: #f87171;
+}
+
 .badge {
   display: inline-flex;
   align-items: center;
@@ -152,6 +156,11 @@ body {
   word-break: break-all;
   color: var(--accent);
   font-size: 1rem;
+}
+
+.hash-head {
+  color: #f87171;
+  font-weight: 600;
 }
 
 .copy {
