@@ -18,7 +18,12 @@
       <p>Compute SHA-256 hashes securely in your browser. No uploads, no trackers—everything stays local.</p>
     </header>
 
-    <section class="card">
+    <nav class="tabs" role="tablist" aria-label="Tools">
+      <button class="tab active" id="hash-tab" data-tab="hash" role="tab" aria-selected="true">File Hasher</button>
+      <button class="tab" id="keygen-tab" data-tab="keygen" role="tab" aria-selected="false">Key Generator</button>
+    </nav>
+
+    <section class="card panel active" data-panel="hash" role="tabpanel" aria-labelledby="hash-tab">
       <label for="file" class="file-drop" id="drop-zone">
         <input id="file" type="file" class="sr-only" />
         <div class="icon-stack" aria-hidden="true">
@@ -38,6 +43,31 @@
         <button class="copy" id="copy-full" type="button" disabled>Copy hash</button>
         <button class="copy secondary" id="copy-prefix" type="button" disabled>Copy first 7</button>
       </div>
+    </section>
+
+    <section class="card panel" data-panel="keygen" role="tabpanel" aria-labelledby="keygen-tab" hidden>
+      <div class="panel-header">
+        <h2>Key Generator</h2>
+        <p>Create 32-byte random secrets and store them safely on your device.</p>
+      </div>
+      <div class="result key-output" id="key-output" aria-live="polite">
+        <p class="placeholder">No key generated yet</p>
+      </div>
+      <div class="key-meta">
+        <div>
+          <p class="meta-label">File name</p>
+          <code id="key-filename">—</code>
+        </div>
+        <div>
+          <p class="meta-label">Entropy</p>
+          <p class="meta-value">32 bytes (256-bit)</p>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="copy" id="generate-key" type="button">Generate key</button>
+        <button class="copy secondary" id="save-key" type="button" disabled>Save file</button>
+      </div>
+      <p class="hint" id="key-hint">Keys never leave this device.</p>
     </section>
   </main>
 

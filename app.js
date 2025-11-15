@@ -4,15 +4,21 @@ const resultContainer = document.getElementById("result");
 const copyFullButton = document.getElementById("copy-full");
 const copyPrefixButton = document.getElementById("copy-prefix");
 const template = document.getElementById("result-template");
+const tabs = document.querySelectorAll("[data-tab]");
+const panels = document.querySelectorAll("[data-panel]");
+const keyOutput = document.getElementById("key-output");
+const keyFilename = document.getElementById("key-filename");
+const generateKeyButton = document.getElementById("generate-key");
+const saveKeyButton = document.getElementById("save-key");
+const keyHint = document.getElementById("key-hint");
 
-const placeholder = `<p class="placeholder">No file selected yet</p>`;
+const NAME_FRAGMENTS = ["zor", "lyn", "qu", "vex", "tal", "dra", "wex", "shi", "mek", "or", "phan", "kel", "zak", "ul", "rin", "vak", "eil", "dro", "gha", "vek"];
+let keyState = null;
 
 async function hashFile(file) {
   const arrayBuffer = await file.arrayBuffer();
   const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
-  return [...new Uint8Array(hashBuffer)]
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+  return bytesToHex(new Uint8Array(hashBuffer));
 }
 
 function renderResult(fileName, hash) {
@@ -118,6 +124,99 @@ copyPrefixButton.addEventListener("click", async () => {
   }
 });
 
+tabs.forEach((tab) => {
+  tab.addEventListener("click", () => setActiveTab(tab.dataset.tab));
+});
+
+function setActiveTab(target) {
+  tabs.forEach((tab) => {
+    const isActive = tab.dataset.tab === target;
+    tab.classList.toggle("active", isActive);
+    tab.setAttribute("aria-selected", String(isActive));
+  });
+  panels.forEach((panel) => {
+    const isActive = panel.dataset.panel === target;
+    panel.hidden = !isActive;
+    panel.classList.toggle("active", isActive);
+  });
+}
+
+function bytesToHex(bytes) {
+  return [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function gibberishName() {
+  const length = 2 + Math.floor(Math.random() * 3);
+  let result = "";
+  for (let i = 0; i < length; i += 1) {
+    result += NAME_FRAGMENTS[Math.floor(Math.random() * NAME_FRAGMENTS.length)];
+  }
+  return result;
+}
+
+function setKeyPlaceholder(message = "No key generated yet") {
+  keyOutput.innerHTML = `<p class="placeholder">${message}</p>`;
+  keyFilename.textContent = "—";
+  saveKeyButton.disabled = true;
+  saveKeyButton.textContent = "Save file";
+  keyHint.textContent = "Keys never leave this device.";
+  keyState = null;
+}
+
+function generateKeyMaterial() {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  const hex = bytesToHex(bytes);
+  const fileName = gibberishName();
+
+  keyState = { bytes, hex, fileName };
+  keyOutput.innerHTML = `<code class="hash-value">${hex}</code>`;
+  keyFilename.textContent = fileName;
+  saveKeyButton.disabled = false;
+  saveKeyButton.textContent = "Save file";
+  keyHint.textContent = "New key ready. Store it securely.";
+}
+
+async function saveKeyToFile() {
+  if (!keyState) {
+    return;
+  }
+
+  const blob = new Blob([keyState.bytes], { type: "application/octet-stream" });
+  const fileName = keyState.fileName;
+
+  try {
+    if (window.showSaveFilePicker) {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: fileName
+      });
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+    } else {
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+    }
+    keyHint.textContent = "Key saved to a local file.";
+    saveKeyButton.textContent = "Saved!";
+    setTimeout(() => {
+      saveKeyButton.textContent = "Save file";
+    }, 1400);
+  } catch (error) {
+    console.error("Save failed", error);
+    keyHint.textContent = "Unable to save file. Please try again.";
+  }
+}
+
+generateKeyButton.addEventListener("click", generateKeyMaterial);
+saveKeyButton.addEventListener("click", saveKeyToFile);
+
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
@@ -127,3 +226,5 @@ if ("serviceWorker" in navigator) {
 }
 
 renderPlaceholder("No file selected yet");
+setKeyPlaceholder();
+setActiveTab("hash");
