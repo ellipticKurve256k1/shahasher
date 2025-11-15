@@ -10,6 +10,8 @@ const keyOutput = document.getElementById("key-output");
 const keyFilename = document.getElementById("key-filename");
 const generateKeyButton = document.getElementById("generate-key");
 const saveKeyButton = document.getElementById("save-key");
+const clearHashButton = document.getElementById("clear-hash");
+const clearKeyButton = document.getElementById("clear-key");
 const keyHint = document.getElementById("key-hint");
 
 const NAME_FRAGMENTS = ["zor", "lyn", "qu", "vex", "tal", "dra", "wex", "shi", "mek", "or", "phan", "kel", "zak", "ul", "rin", "vak", "eil", "dro", "gha", "vek"];
@@ -90,6 +92,11 @@ dropZone.addEventListener("drop", (event) => {
   }
 });
 
+clearHashButton.addEventListener("click", () => {
+  fileInput.value = "";
+  renderPlaceholder("No file selected yet");
+});
+
 copyFullButton.addEventListener("click", async () => {
   const hash = copyFullButton.dataset.hash;
   if (!hash) {
@@ -146,7 +153,7 @@ function bytesToHex(bytes) {
 }
 
 function gibberishName() {
-  const length = 2 + Math.floor(Math.random() * 3);
+  const length = 4 + Math.floor(Math.random() * 3);
   let result = "";
   for (let i = 0; i < length; i += 1) {
     result += NAME_FRAGMENTS[Math.floor(Math.random() * NAME_FRAGMENTS.length)];
@@ -216,6 +223,7 @@ async function saveKeyToFile() {
 
 generateKeyButton.addEventListener("click", generateKeyMaterial);
 saveKeyButton.addEventListener("click", saveKeyToFile);
+clearKeyButton.addEventListener("click", () => setKeyPlaceholder());
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
