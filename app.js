@@ -13,8 +13,10 @@ const saveKeyButton = document.getElementById("save-key");
 const clearHashButton = document.getElementById("clear-hash");
 const clearKeyButton = document.getElementById("clear-key");
 const keyHint = document.getElementById("key-hint");
+const keyEntropy = document.getElementById("key-entropy");
 
 const NAME_FRAGMENTS = ["zor", "lyn", "qu", "vex", "tal", "dra", "wex", "shi", "mek", "or", "phan", "kel", "zak", "ul", "rin", "vak", "eil", "dro", "gha", "vek"];
+const KEY_BYTE_LENGTH = 48; // >32 and <64 bytes
 let keyState = null;
 
 async function hashFile(file) {
@@ -167,11 +169,12 @@ function setKeyPlaceholder(message = "No key generated yet") {
   saveKeyButton.disabled = true;
   saveKeyButton.textContent = "Save file";
   keyHint.textContent = "Keys never leave this device.";
+  keyEntropy.textContent = `${KEY_BYTE_LENGTH} bytes (${KEY_BYTE_LENGTH * 8}-bit)`;
   keyState = null;
 }
 
 function generateKeyMaterial() {
-  const bytes = new Uint8Array(32);
+  const bytes = new Uint8Array(KEY_BYTE_LENGTH);
   crypto.getRandomValues(bytes);
   const hex = bytesToHex(bytes);
   const fileName = gibberishName();
@@ -181,7 +184,8 @@ function generateKeyMaterial() {
   keyFilename.textContent = fileName;
   saveKeyButton.disabled = false;
   saveKeyButton.textContent = "Save file";
-  keyHint.textContent = "New key ready. Store it securely.";
+  keyEntropy.textContent = `${bytes.length} bytes (${bytes.length * 8}-bit)`;
+  keyHint.textContent = "New key ready. Raw binary with no extension.";
 }
 
 async function saveKeyToFile() {
