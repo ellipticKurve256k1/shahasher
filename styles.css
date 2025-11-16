@@ -163,6 +163,12 @@ body {
   min-height: 112px;
 }
 
+.slot-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
 .result {
   min-height: 96px;
   border-radius: 1rem;

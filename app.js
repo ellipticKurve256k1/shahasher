@@ -1,9 +1,9 @@
 const fileInputs = Array.from(document.querySelectorAll(".file-input"));
 const dropZones = Array.from(document.querySelectorAll(".file-drop[data-index]"));
 const slotResults = Array.from(document.querySelectorAll(".slot-result"));
+const slotCopyFullButtons = Array.from(document.querySelectorAll(".slot-copy-full"));
+const slotCopyPrefixButtons = Array.from(document.querySelectorAll(".slot-copy-prefix"));
 const compareArea = document.getElementById("compare-area");
-const copyFullButton = document.getElementById("copy-full");
-const copyPrefixButton = document.getElementById("copy-prefix");
 const template = document.getElementById("result-template");
 const compareTemplate = document.getElementById("compare-template");
 const tabs = document.querySelectorAll("[data-tab]");
@@ -26,7 +26,6 @@ const fileInputMap = fileInputs.reduce((acc, input) => {
   acc[Number(input.dataset.index)] = input;
   return acc;
 }, []);
-let activeSlot = null;
 
 async function hashFile(file) {
   const arrayBuffer = await file.arrayBuffer();
@@ -37,6 +36,7 @@ async function hashFile(file) {
 function setSlotPlaceholder(index, message) {
   const placeholders = ["Waiting for File A", "Waiting for File B"];
   slotResults[index].innerHTML = `<p class="placeholder">${message || placeholders[index]}</p>`;
+  updateSlotCopyButtons(index);
 }
 
 function renderSlotResult(index, { name, hash }) {
@@ -48,6 +48,7 @@ function renderSlotResult(index, { name, hash }) {
   codeEl.innerHTML = `<span class="hash-head">${firstSegment}</span>${remainder}`;
   slotResults[index].innerHTML = "";
   slotResults[index].appendChild(clone);
+  updateSlotCopyButtons(index);
 }
 
 function updateCompareArea() {
@@ -67,29 +68,33 @@ function updateCompareArea() {
     wrapper.appendChild(block);
     compareArea.appendChild(wrapper);
   }
-  updateCopyTargets();
 }
 
-function updateCopyTargets() {
-  const source =
-    (activeSlot !== null && slotStates[activeSlot]) || slotStates.find(Boolean);
-  if (!source) {
-    [copyFullButton, copyPrefixButton].forEach((button) => {
+function updateSlotCopyButtons(index) {
+  const state = slotStates[index];
+  const fullButton = slotCopyFullButtons[index];
+  const prefixButton = slotCopyPrefixButtons[index];
+  if (!fullButton || !prefixButton) {
+    return;
+  }
+
+  if (!state) {
+    [fullButton, prefixButton].forEach((button) => {
       button.disabled = true;
       delete button.dataset.hash;
       delete button.dataset.prefix;
-      button.textContent = button.id === "copy-full" ? "Copy hash" : "Copy first 7";
+      button.textContent =
+        button.classList.contains("slot-copy-full") ? "Copy hash" : "Copy first 7";
     });
     return;
   }
 
-  copyFullButton.disabled = false;
-  copyFullButton.dataset.hash = source.hash;
-  copyFullButton.textContent = "Copy hash";
-  const firstSegment = source.hash.slice(0, 7);
-  copyPrefixButton.disabled = false;
-  copyPrefixButton.dataset.prefix = firstSegment;
-  copyPrefixButton.textContent = "Copy first 7";
+  fullButton.disabled = false;
+  fullButton.dataset.hash = state.hash;
+  fullButton.textContent = "Copy hash";
+  prefixButton.disabled = false;
+  prefixButton.dataset.prefix = state.hash.slice(0, 7);
+  prefixButton.textContent = "Copy first 7";
 }
 
 async function handleSlot(index, fileList) {
@@ -106,7 +111,6 @@ async function handleSlot(index, fileList) {
     const hash = await hashFile(file);
     const result = { name: file.name, hash };
     slotStates[index] = result;
-    activeSlot = index;
     renderSlotResult(index, result);
     updateCompareArea();
   } catch (error) {
@@ -122,12 +126,10 @@ function resetHashPanel() {
     slotStates[index] = null;
     setSlotPlaceholder(index);
   });
-  activeSlot = null;
   compareArea.innerHTML = "";
   fileInputs.forEach((input) => {
     input.value = "";
   });
-  updateCopyTargets();
 }
 
 fileInputs.forEach((input) => {
@@ -168,38 +170,43 @@ clearHashButton.addEventListener("click", () => {
   resetHashPanel();
 });
 
-copyFullButton.addEventListener("click", async () => {
-  const hash = copyFullButton.dataset.hash;
-  if (!hash) {
-    return;
-  }
-
-  try {
-    await navigator.clipboard.writeText(hash);
-    copyFullButton.textContent = "Copied!";
-    setTimeout(() => (copyFullButton.textContent = "Copy hash"), 1200);
-  } catch (error) {
-    console.error("Clipboard error", error);
-    copyFullButton.textContent = "Copy failed";
-    setTimeout(() => (copyFullButton.textContent = "Copy hash"), 1200);
-  }
+slotCopyFullButtons.forEach((button) => {
+  const index = Number(button.dataset.index);
+  button.addEventListener("click", async () => {
+    const state = slotStates[index];
+    if (!state) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(state.hash);
+      button.textContent = "Copied!";
+      setTimeout(() => updateSlotCopyButtons(index), 1200);
+    } catch (error) {
+      console.error("Clipboard error", error);
+      button.textContent = "Copy failed";
+      setTimeout(() => updateSlotCopyButtons(index), 1200);
+    }
+  });
 });
 
-copyPrefixButton.addEventListener("click", async () => {
-  const prefix = copyPrefixButton.dataset.prefix;
-  if (!prefix) {
-    return;
-  }
-
-  try {
-    await navigator.clipboard.writeText(prefix);
-    copyPrefixButton.textContent = "Copied!";
-    setTimeout(() => (copyPrefixButton.textContent = "Copy first 7"), 1200);
-  } catch (error) {
-    console.error("Clipboard error", error);
-    copyPrefixButton.textContent = "Copy failed";
-    setTimeout(() => (copyPrefixButton.textContent = "Copy first 7"), 1200);
-  }
+slotCopyPrefixButtons.forEach((button) => {
+  const index = Number(button.dataset.index);
+  button.addEventListener("click", async () => {
+    const state = slotStates[index];
+    if (!state) {
+      return;
+    }
+    const prefix = state.hash.slice(0, 7);
+    try {
+      await navigator.clipboard.writeText(prefix);
+      button.textContent = "Copied!";
+      setTimeout(() => updateSlotCopyButtons(index), 1200);
+    } catch (error) {
+      console.error("Clipboard error", error);
+      button.textContent = "Copy failed";
+      setTimeout(() => updateSlotCopyButtons(index), 1200);
+    }
+  });
 });
 
 tabs.forEach((tab) => {

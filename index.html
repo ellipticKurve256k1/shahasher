@@ -40,6 +40,10 @@
           <div class="result slot-result" id="slot-result-0" aria-live="polite">
             <p class="placeholder">Waiting for File A</p>
           </div>
+          <div class="slot-actions">
+            <button class="copy slot-copy-full" data-index="0" type="button" disabled>Copy hash</button>
+            <button class="copy secondary slot-copy-prefix" data-index="0" type="button" disabled>Copy first 7</button>
+          </div>
         </div>
 
         <div class="uploader">
@@ -58,13 +62,15 @@
           <div class="result slot-result" id="slot-result-1" aria-live="polite">
             <p class="placeholder">Waiting for File B</p>
           </div>
+          <div class="slot-actions">
+            <button class="copy slot-copy-full" data-index="1" type="button" disabled>Copy hash</button>
+            <button class="copy secondary slot-copy-prefix" data-index="1" type="button" disabled>Copy first 7</button>
+          </div>
         </div>
       </div>
 
       <div id="compare-area"></div>
       <div class="actions">
-        <button class="copy" id="copy-full" type="button" disabled>Copy hash</button>
-        <button class="copy secondary" id="copy-prefix" type="button" disabled>Copy first 7</button>
         <button class="copy ghost" id="clear-hash" type="button">Clear</button>
       </div>
     </section>
