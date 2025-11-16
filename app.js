@@ -1,9 +1,11 @@
-const fileInput = document.getElementById("file");
-const dropZone = document.getElementById("drop-zone");
-const resultContainer = document.getElementById("result");
+const fileInputs = Array.from(document.querySelectorAll(".file-input"));
+const dropZones = Array.from(document.querySelectorAll(".file-drop[data-index]"));
+const slotResults = Array.from(document.querySelectorAll(".slot-result"));
+const compareArea = document.getElementById("compare-area");
 const copyFullButton = document.getElementById("copy-full");
 const copyPrefixButton = document.getElementById("copy-prefix");
 const template = document.getElementById("result-template");
+const compareTemplate = document.getElementById("compare-template");
 const tabs = document.querySelectorAll("[data-tab]");
 const panels = document.querySelectorAll("[data-panel]");
 const keyOutput = document.getElementById("key-output");
@@ -17,7 +19,14 @@ const keyEntropy = document.getElementById("key-entropy");
 
 const NAME_FRAGMENTS = ["zor", "lyn", "qu", "vex", "tal", "dra", "wex", "shi", "mek", "or", "phan", "kel", "zak", "ul", "rin", "vak", "eil", "dro", "gha", "vek"];
 const KEY_BYTE_LENGTH = 48; // >32 and <64 bytes
+const SLOT_COUNT = 2;
 let keyState = null;
+const slotStates = Array.from({ length: SLOT_COUNT }, () => null);
+const fileInputMap = fileInputs.reduce((acc, input) => {
+  acc[Number(input.dataset.index)] = input;
+  return acc;
+}, []);
+let activeSlot = null;
 
 async function hashFile(file) {
   const arrayBuffer = await file.arrayBuffer();
@@ -25,78 +34,138 @@ async function hashFile(file) {
   return bytesToHex(new Uint8Array(hashBuffer));
 }
 
-function renderResult(fileName, hash) {
-  resultContainer.innerHTML = "";
+function setSlotPlaceholder(index, message) {
+  const placeholders = ["Waiting for File A", "Waiting for File B"];
+  slotResults[index].innerHTML = `<p class="placeholder">${message || placeholders[index]}</p>`;
+}
+
+function renderSlotResult(index, { name, hash }) {
   const clone = template.content.cloneNode(true);
-  clone.querySelector(".file-name").textContent = fileName;
+  clone.querySelector(".file-name").textContent = name;
   const codeEl = clone.querySelector(".hash-value");
   const firstSegment = hash.slice(0, 7);
   const remainder = hash.slice(7);
   codeEl.innerHTML = `<span class="hash-head">${firstSegment}</span>${remainder}`;
-  resultContainer.appendChild(clone);
+  slotResults[index].innerHTML = "";
+  slotResults[index].appendChild(clone);
+}
+
+function updateCompareArea() {
+  compareArea.innerHTML = "";
+  if (slotStates.every(Boolean)) {
+    const [first, second] = slotStates;
+    const compareNode = compareTemplate.content.cloneNode(true);
+    const match = first.hash === second.hash;
+    const block = compareNode.querySelector(".compare-result");
+    block.classList.add(match ? "match" : "mismatch");
+    compareNode.querySelector(".compare-text").textContent = match
+      ? "Hashes match"
+      : "Hashes do not match";
+    compareNode.querySelector(".compare-icon").textContent = match ? "✅" : "⚠️";
+    const wrapper = document.createElement("div");
+    wrapper.className = "compare-wrapper";
+    wrapper.appendChild(block);
+    compareArea.appendChild(wrapper);
+  }
+  updateCopyTargets();
+}
+
+function updateCopyTargets() {
+  const source =
+    (activeSlot !== null && slotStates[activeSlot]) || slotStates.find(Boolean);
+  if (!source) {
+    [copyFullButton, copyPrefixButton].forEach((button) => {
+      button.disabled = true;
+      delete button.dataset.hash;
+      delete button.dataset.prefix;
+      button.textContent = button.id === "copy-full" ? "Copy hash" : "Copy first 7";
+    });
+    return;
+  }
+
   copyFullButton.disabled = false;
-  copyFullButton.dataset.hash = hash;
+  copyFullButton.dataset.hash = source.hash;
   copyFullButton.textContent = "Copy hash";
+  const firstSegment = source.hash.slice(0, 7);
   copyPrefixButton.disabled = false;
   copyPrefixButton.dataset.prefix = firstSegment;
   copyPrefixButton.textContent = "Copy first 7";
 }
 
-function renderPlaceholder(message) {
-  resultContainer.innerHTML = `<p class="placeholder">${message}</p>`;
-  [copyFullButton, copyPrefixButton].forEach((button) => {
-    button.disabled = true;
-    delete button.dataset.hash;
-    delete button.dataset.prefix;
-    button.textContent = button.id === "copy-full" ? "Copy hash" : "Copy first 7";
-  });
-}
-
-async function handleFiles(files) {
-  if (!files?.length) {
-    renderPlaceholder("No file selected yet");
+async function handleSlot(index, fileList) {
+  const file = fileList?.[0];
+  if (!file) {
+    slotStates[index] = null;
+    setSlotPlaceholder(index);
+    updateCompareArea();
     return;
   }
 
-  const file = files[0];
-  renderPlaceholder("Calculating…");
-
+  setSlotPlaceholder(index, "Calculating…");
   try {
     const hash = await hashFile(file);
-    renderResult(file.name, hash);
+    const result = { name: file.name, hash };
+    slotStates[index] = result;
+    activeSlot = index;
+    renderSlotResult(index, result);
+    updateCompareArea();
   } catch (error) {
     console.error(error);
-    renderPlaceholder("Something went wrong. Please try another file.");
+    slotStates[index] = null;
+    setSlotPlaceholder(index, "Failed to hash file.");
+    updateCompareArea();
   }
 }
 
-fileInput.addEventListener("change", (event) => handleFiles(event.target.files));
-
-["dragenter", "dragover"].forEach((eventName) => {
-  dropZone.addEventListener(eventName, (event) => {
-    event.preventDefault();
-    dropZone.classList.add("dragging");
+function resetHashPanel() {
+  slotStates.forEach((_, index) => {
+    slotStates[index] = null;
+    setSlotPlaceholder(index);
   });
+  activeSlot = null;
+  compareArea.innerHTML = "";
+  fileInputs.forEach((input) => {
+    input.value = "";
+  });
+  updateCopyTargets();
+}
+
+fileInputs.forEach((input) => {
+  const index = Number(input.dataset.index);
+  input.addEventListener("change", (event) => handleSlot(index, event.target.files));
 });
 
-["dragleave", "drop"].forEach((eventName) => {
-  dropZone.addEventListener(eventName, (event) => {
-    event.preventDefault();
-    dropZone.classList.remove("dragging");
+dropZones.forEach((zone) => {
+  const index = Number(zone.dataset.index);
+  ["dragenter", "dragover"].forEach((eventName) => {
+    zone.addEventListener(eventName, (event) => {
+      event.preventDefault();
+      zone.classList.add("dragging");
+    });
   });
-});
-
-dropZone.addEventListener("drop", (event) => {
-  const files = event.dataTransfer?.files;
-  if (files?.length) {
-    fileInput.files = files;
-    handleFiles(files);
-  }
+  ["dragleave", "drop"].forEach((eventName) => {
+    zone.addEventListener(eventName, (event) => {
+      event.preventDefault();
+      zone.classList.remove("dragging");
+    });
+  });
+  zone.addEventListener("drop", (event) => {
+    const files = event.dataTransfer?.files;
+    if (files?.length) {
+      if (typeof DataTransfer !== "undefined") {
+        const dt = new DataTransfer();
+        dt.items.add(files[0]);
+        fileInputMap[index].files = dt.files;
+        handleSlot(index, dt.files);
+      } else {
+        handleSlot(index, files);
+      }
+    }
+  });
 });
 
 clearHashButton.addEventListener("click", () => {
-  fileInput.value = "";
-  renderPlaceholder("No file selected yet");
+  resetHashPanel();
 });
 
 copyFullButton.addEventListener("click", async () => {
@@ -237,6 +306,6 @@ if ("serviceWorker" in navigator) {
   });
 }
 
-renderPlaceholder("No file selected yet");
+resetHashPanel();
 setKeyPlaceholder();
 setActiveTab("hash");

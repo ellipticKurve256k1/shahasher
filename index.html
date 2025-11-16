@@ -13,7 +13,7 @@
 <body>
   <main class="app-shell">
     <header class="hero">
-      <p class="badge">PWA</p>
+      <!-- <p class="badge">PWA</p> -->
       <h1><span class="title-accent">SHAHash</span>er</h1>
       <p>Compute SHA-256 hashes securely in your browser. No uploads, no trackers—everything stays local.</p>
     </header>
@@ -24,21 +24,45 @@
     </nav>
 
     <section class="card panel active" data-panel="hash" role="tabpanel" aria-labelledby="hash-tab">
-      <label for="file" class="file-drop" id="drop-zone">
-        <input id="file" type="file" class="sr-only" />
-        <div class="icon-stack" aria-hidden="true">
-          <span class="icon icon-layer"></span>
-          <span class="icon icon-top"></span>
+      <div class="uploaders">
+        <div class="uploader">
+          <p class="uploader-title">File A</p>
+          <label for="file-a" class="file-drop" data-index="0">
+            <input id="file-a" type="file" class="sr-only file-input" data-index="0" />
+            <div class="icon-stack" aria-hidden="true">
+              <span class="icon icon-layer"></span>
+              <span class="icon icon-top"></span>
+            </div>
+            <div>
+              <strong>Choose a file</strong>
+              <p>or drag & drop the first file</p>
+            </div>
+          </label>
+          <div class="result slot-result" id="slot-result-0" aria-live="polite">
+            <p class="placeholder">Waiting for File A</p>
+          </div>
         </div>
-        <div>
-          <strong>Choose a file</strong>
-          <p>or drag & drop anywhere inside the box</p>
-        </div>
-      </label>
 
-      <div class="result" id="result" aria-live="polite">
-        <p class="placeholder">No file selected yet</p>
+        <div class="uploader">
+          <p class="uploader-title">File B</p>
+          <label for="file-b" class="file-drop" data-index="1">
+            <input id="file-b" type="file" class="sr-only file-input" data-index="1" />
+            <div class="icon-stack" aria-hidden="true">
+              <span class="icon icon-layer"></span>
+              <span class="icon icon-top"></span>
+            </div>
+            <div>
+              <strong>Choose a file</strong>
+              <p>or drag & drop the second file</p>
+            </div>
+          </label>
+          <div class="result slot-result" id="slot-result-1" aria-live="polite">
+            <p class="placeholder">Waiting for File B</p>
+          </div>
+        </div>
       </div>
+
+      <div id="compare-area"></div>
       <div class="actions">
         <button class="copy" id="copy-full" type="button" disabled>Copy hash</button>
         <button class="copy secondary" id="copy-prefix" type="button" disabled>Copy first 7</button>
@@ -78,6 +102,12 @@
       <p class="file-name"></p>
       <p class="hash-label">SHA-256</p>
       <code class="hash-value"></code>
+    </div>
+  </template>
+  <template id="compare-template">
+    <div class="compare-result">
+      <span class="compare-icon" aria-hidden="true"></span>
+      <span class="compare-text"></span>
     </div>
   </template>
 
